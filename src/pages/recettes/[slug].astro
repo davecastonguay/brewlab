@@ -1,0 +1,184 @@
+---
+import { getCollection, render } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import { ibuTinseth } from "../../lib/calculs";
+import { dateFr, url } from "../../lib/url";
+
+export async function getStaticPaths() {
+  const recettes = await getCollection("recettes");
+  return recettes.map((recette) => ({ params: { slug: recette.id }, props: { recette } }));
+}
+
+const { recette } = Astro.props;
+const r = recette.data;
+const { Content } = await render(recette);
+
+const grainTotal = r.malts.reduce((s, m) => s + m.grammes, 0);
+const densite = r.cibles.densiteInitiale ?? 1.05;
+const ibuEstime = r.houblons
+  .filter((h) => h.usage === "ebullition" && h.alpha)
+  .reduce((s, h) => s + ibuTinseth(h.grammes, h.alpha ?? 0, h.temps, r.volumeLitres, densite), 0);
+const ibu = r.cibles.ibu ?? Math.round(ibuEstime);
+
+const USAGES = { ebullition: "Ébullition", whirlpool: "Whirlpool", dryhop: "Dry hop" } as const;
+const moment = (h: (typeof r.houblons)[number]) => {
+  switch (h.usage) {
+    case "ebullition":
+      return `${h.temps} min avant la fin`;
+    case "whirlpool":
+      return h.temps > 0
+        ? `${h.temps} min à ${h.temperature ?? 80} °C`
+        : `pendant le refroidissement, à ${h.temperature ?? 80} °C`;
+    case "dryhop":
+      return `${h.temps} jours`;
+    default: {
+      const jamais: never = h.usage;
+      return jamais;
+    }
+  }
+};
+
+const brassins = (await getCollection("batches"))
+  .filter((b) => b.data.recette === recette.id)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+---
+
+<Base titre={r.titre} description={r.resume}>
+  <a href={url("/recettes")}>← Toutes les recettes</a>
+  <span class="surtitre" style="display:block;margin-top:1rem">{r.style}</span>
+  <h1>{r.titre}</h1>
+  <p class="intro">{r.resume}</p>
+
+  <p><a class="bouton" href={url(`/brassage/${recette.id}`)}>Brasser cette recette</a></p>
+
+  <div class="chiffres">
+    <div class="chiffre"><strong>{r.volumeLitres} L</strong><span>Volume</span></div>
+    <div class="chiffre"><strong>{(grainTotal / 1000).toLocaleString("fr-CA")} kg</strong><span>Grain total</span></div>
+    {
+      r.cibles.densiteInitiale && (
+        <div class="chiffre">
+          <strong>{r.cibles.densiteInitiale.toFixed(3).replace(".", ",")}</strong>
+          <span>DI visée</span>
+        </div>
+      )
+    }
+    <div class="chiffre"><strong>~{ibu}</strong><span>IBU estimés</span></div>
+  </div>
+
+  <h2>Malts</h2>
+  <table>
+    <thead><tr><th>Malt</th><th>Quantité</th><th>%</th></tr></thead>
+    <tbody>
+      {
+        r.malts.map((m) => (
+          <tr>
+            <td>
+              {m.nom} {m.aConfirmer && <span class="badge confirmer">à confirmer</span>}
+            </td>
+            <td>{m.grammes >= 1000 ? `${(m.grammes / 1000).toLocaleString("fr-CA")} kg` : `${m.grammes} g`}</td>
+            <td>{Math.round((m.grammes / grainTotal) * 100)} %</td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+
+  <h2>Houblons</h2>
+  <table>
+    <thead><tr><th>Houblon</th><th>Quantité</th><th>Quand</th><th>AA %</th></tr></thead>
+    <tbody>
+      {
+        r.houblons.map((h) => (
+          <tr>
+            <td>{h.nom}</td>
+            <td>{h.grammes} g</td>
+            <td>
+              <strong>{USAGES[h.usage]}</strong> · {moment(h)}
+            </td>
+            <td>{h.alpha ? `~${h.alpha.toLocaleString("fr-CA")}` : "—"}</td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+
+  {
+    r.autres.length > 0 && (
+      <>
+        <h2>Autres ajouts</h2>
+        <table>
+          <thead><tr><th>Ingrédient</th><th>Quantité</th><th>Moment</th><th>Rôle</th></tr></thead>
+          <tbody>
+            {r.autres.map((a) => (
+              <tr>
+                <td>{a.nom}</td>
+                <td>{a.quantite}</td>
+                <td>{a.minutesAvantFin} min avant la fin</td>
+                <td>{a.role}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </>
+    )
+  }
+
+  <h2>Empâtage</h2>
+  {
+    r.eau && (
+      <p>
+        Eau : {r.eau.litresDepart} L au départ
+        {r.eau.litresAvantEbullition && <>, égoutter jusqu'à {r.eau.litresAvantEbullition} L avant l'ébullition</>}.
+      </p>
+    )
+  }
+  <table>
+    <thead><tr><th>Palier</th><th>Température</th><th>Durée</th></tr></thead>
+    <tbody>
+      {
+        r.paliers.map((p) => (
+          <tr>
+            <td>
+              {p.nom} {p.aConfirmer && <span class="badge confirmer">à confirmer</span>}
+            </td>
+            <td>{p.temperature} °C</td>
+            <td>{p.minutes} min</td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+
+  <h2>Levure</h2>
+  <p>
+    {r.levure.quantite} de {r.levure.nom}, fermentation à {r.levure.temperature}
+    {r.levure.aConfirmer && <span class="badge confirmer">à confirmer</span>}
+  </p>
+  <p>
+    Calendrier : {r.calendrier.primaireJours} jours au fermenteur
+    {r.calendrier.secondaireJours > 0 && <>, puis {r.calendrier.secondaireJours} jours en tourie</>}, puis en
+    bouteille.
+  </p>
+
+  <article class="prose">
+    <Content />
+  </article>
+
+  {
+    brassins.length > 0 && (
+      <>
+        <h2>Brassins de cette recette</h2>
+        <ul>
+          {brassins.map((b) => (
+            <li>
+              <a href={url(`/journal/${b.id}`)}>
+                #{b.data.numero} · {b.data.titre}
+              </a>{" "}
+              ({dateFr(b.data.date)})
+            </li>
+          ))}
+        </ul>
+      </>
+    )
+  }
+</Base>

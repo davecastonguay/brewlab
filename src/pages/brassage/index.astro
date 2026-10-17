@@ -1,0 +1,26 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import { url } from "../../lib/url";
+
+const recettes = (await getCollection("recettes")).sort((a, b) => a.data.titre.localeCompare(b.data.titre, "fr"));
+---
+
+<Base titre="Jour de brassage">
+  <h1>Jour de brassage</h1>
+  <p class="intro">
+    Choisis la recette du jour : les étapes s'affichent dans l'ordre, avec des cases à cocher et des minuteurs. Ta
+    progression reste enregistrée sur ton appareil, même si tu fermes la page.
+  </p>
+  <div class="grille">
+    {
+      recettes.map((r) => (
+        <a class="carte" href={url(`/brassage/${r.id}`)}>
+          <span class="surtitre">{r.data.style}</span>
+          <h3>{r.data.titre}</h3>
+          <p>{r.data.resume}</p>
+        </a>
+      ))
+    }
+  </div>
+</Base>

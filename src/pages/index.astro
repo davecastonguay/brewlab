@@ -1,0 +1,212 @@
+---
+import { getCollection } from "astro:content";
+import { Image } from "astro:assets";
+import Base from "../layouts/Base.astro";
+import { STATUTS } from "../lib/statuts";
+import { dateFr, slugNotion, url } from "../lib/url";
+import photo from "../assets/photos/cours/houblon-pellets.jpg";
+
+const batches = (await getCollection("batches")).sort((a, b) => b.data.numero - a.data.numero);
+const recettes = await getCollection("recettes");
+const notions = (await getCollection("notions")).sort((a, b) => a.data.ordre - b.data.ordre);
+const dernier = batches[0];
+const recetteDernier = dernier && recettes.find((r) => r.id === dernier.data.recette);
+---
+
+<Base titre="BrewLab">
+  <section class="hero">
+    <div class="hero-texte">
+      <p class="devise">Small batch, more batch</p>
+      <h1>Brasser, noter,<br />recommencer.</h1>
+      <p class="sous-titre">Mes recettes, mes brassins et ce que j'apprends en chemin.</p>
+      <div class="actions">
+        <a class="bouton" href={url("/brassage")}>Commencer un brassin</a>
+        <a class="lien" href={url("/recettes")}>Voir les recettes →</a>
+      </div>
+    </div>
+    <Image class="hero-photo" src={photo} alt="Houblon en granules" width={640} loading="eager" />
+  </section>
+
+  {
+    dernier && (
+      <a class="en-cours" href={url(`/journal/${dernier.id}`)}>
+        <span class="pastille" />
+        <span class="en-cours-texte">
+          <strong>
+            Batch #{dernier.data.numero} · {recetteDernier?.data.titre ?? dernier.data.titre}
+          </strong>
+          <span>
+            {STATUTS[dernier.data.statut].label}
+            {dernier.data.prochaineEtape && (
+              <>
+                {" "}
+                · {dernier.data.prochaineEtape.texte} le {dateFr(dernier.data.prochaineEtape.date)}
+              </>
+            )}
+          </span>
+        </span>
+        <span class="fleche">→</span>
+      </a>
+    )
+  }
+
+  <section class="apprendre">
+    <h2>Apprendre</h2>
+    <ol>
+      {
+        notions.map((n) => (
+          <li>
+            <a href={url(`/notions/${slugNotion(n.id)}`)}>{n.data.titre}</a>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+</Base>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    align-items: center;
+    gap: 2.5rem;
+    padding: 2rem 0 2.5rem;
+  }
+
+  .devise {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ambre);
+  }
+
+  h1 {
+    font-size: clamp(2.2rem, 6vw, 3.4rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0.6rem 0 1rem;
+  }
+
+  .sous-titre {
+    margin: 0 0 1.75rem;
+    font-size: 1.15rem;
+    color: var(--doux);
+    max-width: 26rem;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .lien {
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .hero-photo {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgb(60 40 20 / 0.18);
+  }
+
+  .en-cours {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-radius: 16px;
+    background: var(--texte);
+    color: var(--mousse);
+    text-decoration: none;
+    transition: transform 0.15s;
+  }
+
+  .en-cours:hover {
+    transform: translateY(-2px);
+  }
+
+  .pastille {
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--ambre);
+    box-shadow: 0 0 0 6px rgb(201 133 42 / 0.25);
+  }
+
+  .en-cours-texte {
+    display: grid;
+    flex: 1;
+  }
+
+  .en-cours-texte span {
+    color: #cdbca5;
+    font-size: 0.95rem;
+  }
+
+  .fleche {
+    font-size: 1.3rem;
+    color: var(--ambre);
+  }
+
+  .apprendre h2 {
+    margin: 3rem 0 1rem;
+  }
+
+  .apprendre ol {
+    list-style: none;
+    counter-reset: notion;
+    margin: 0;
+    padding: 0;
+    columns: 2;
+    column-gap: 2.5rem;
+  }
+
+  .apprendre li {
+    counter-increment: notion;
+    break-inside: avoid;
+    border-bottom: 1px solid var(--bordure);
+  }
+
+  .apprendre li a {
+    display: flex;
+    gap: 0.9rem;
+    padding: 0.75rem 0;
+    color: var(--texte);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .apprendre li a::before {
+    content: counter(notion, decimal-leading-zero);
+    color: var(--ambre);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .apprendre li a:hover {
+    color: var(--ambre);
+  }
+
+  @media (max-width: 720px) {
+    .hero {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      padding-top: 0.5rem;
+    }
+    .hero-photo {
+      order: -1;
+      aspect-ratio: 16 / 9;
+    }
+    .apprendre ol {
+      columns: 1;
+    }
+  }
+</style>

@@ -1,0 +1,52 @@
+---
+import "../styles/global.css";
+import { url } from "../lib/url";
+
+interface Props {
+  titre: string;
+  description?: string;
+}
+
+const { titre, description = "Mon carnet de brassage : étapes, recettes, notions et journal des brassins." } =
+  Astro.props;
+
+const liens = [
+  { href: url("/"), label: "Accueil" },
+  { href: url("/brassage"), label: "Brasser" },
+  { href: url("/recettes"), label: "Recettes" },
+  { href: url("/journal"), label: "Journal" },
+  { href: url("/notions"), label: "Notions" },
+  { href: url("/outils"), label: "Outils" },
+];
+
+const courant = Astro.url.pathname.replace(/\/$/, "");
+const estActif = (href: string) => {
+  const h = href.replace(/\/$/, "");
+  return h === url("/").replace(/\/$/, "") ? courant === h : courant.startsWith(h);
+};
+---
+
+<!doctype html>
+<html lang="fr-CA">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href={url("/favicon.svg")} />
+    <title>{titre === "BrewLab" ? titre : `${titre} · BrewLab`}</title>
+  </head>
+  <body>
+    <header class="entete">
+      <a class="logo" href={url("/")}>Brew<span>Lab</span></a>
+      <nav aria-label="Navigation principale">
+        {liens.map((l) => <a href={l.href} aria-current={estActif(l.href) ? "page" : undefined}>{l.label}</a>)}
+      </nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="pied">
+      <p>BrewLab, mon carnet de brassage. Bière maison, à boire avec modération.</p>
+    </footer>
+  </body>
+</html>

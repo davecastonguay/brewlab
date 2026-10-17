@@ -1,0 +1,26 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import { slugNotion, url } from "../../lib/url";
+
+const notions = (await getCollection("notions")).sort((a, b) => a.data.ordre - b.data.ordre);
+---
+
+<Base titre="Notions">
+  <h1>Les notions</h1>
+  <p class="intro">
+    Chaque fiche commence par l'essentiel, puis une section « pour aller plus loin ». À lire dans l'ordre pour
+    débuter.
+  </p>
+  <div class="grille">
+    {
+      notions.map((n) => (
+        <a class="carte" href={url(`/notions/${slugNotion(n.id)}`)}>
+          <span class="surtitre">Fiche {n.data.ordre}</span>
+          <h3>{n.data.titre}</h3>
+          <p>{n.data.resume}</p>
+        </a>
+      ))
+    }
+  </div>
+</Base>

@@ -1,0 +1,427 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import { etapesPourRecette, PHASES, type Phase } from "../../lib/etapes";
+import { url } from "../../lib/url";
+
+export async function getStaticPaths() {
+  const recettes = await getCollection("recettes");
+  return recettes.map((recette) => ({ params: { slug: recette.id }, props: { recette } }));
+}
+
+const { recette } = Astro.props;
+const etapes = etapesPourRecette(recette.data);
+const phases = Object.keys(PHASES) as Phase[];
+---
+
+<Base titre={`Brasser : ${recette.data.titre}`}>
+  <a href={url(`/recettes/${recette.id}`)}>← Fiche de la recette</a>
+  <h1>{recette.data.titre}</h1>
+
+  <div class="barre" data-cle={`brewlab:brassage:${recette.id}`}>
+    <div class="progression"><div class="remplissage"></div></div>
+    <span class="compte"></span>
+    <label class="eveil"><input type="checkbox" class="garder-eveille" /> Garder l'écran allumé</label>
+    <button type="button" class="bouton secondaire recommencer">Recommencer</button>
+  </div>
+
+  <div class="alerte" role="alert" hidden>
+    <span class="alerte-texte"></span>
+    <button type="button" class="bouton alerte-ok">OK</button>
+  </div>
+
+  {
+    phases.map((phase) => {
+      const liste = etapes.filter((e) => e.phase === phase);
+      return (
+        liste.length > 0 && (
+          <section>
+            <h2>{PHASES[phase]}</h2>
+            <ol class="etapes">
+              {liste.map((e) => (
+                <li class="etape" data-id={e.id}>
+                  <label class="titre">
+                    <input type="checkbox" class="fait" />
+                    <span>
+                      {e.titre} {e.important && <span class="badge">important</span>}{" "}
+                      {e.aConfirmer && <span class="badge confirmer">à confirmer</span>}
+                    </span>
+                  </label>
+                  <ul class="details">
+                    {e.details.map((d) => (
+                      <li>{d}</li>
+                    ))}
+                  </ul>
+                  {e.minutes && (
+                    <div
+                      class="minuteur"
+                      data-minutes={e.minutes}
+                      data-alertes={JSON.stringify(e.alertes ?? [])}
+                    >
+                      <span class="temps">{String(e.minutes).padStart(2, "0")}:00</span>
+                      <button type="button" class="bouton demarrer">Démarrer</button>
+                      <button type="button" class="bouton secondaire reinitialiser">↺</button>
+                      {e.alertes && e.alertes.length > 0 && (
+                        <ul class="rappels">
+                          {e.alertes
+                            .map((a, index) => ({ ...a, index }))
+                            .sort((a, b) => b.aRestant - a.aRestant)
+                            .map((a) => (
+                              <li data-index={a.index}>
+                                À {a.aRestant} min restantes : {a.message}
+                              </li>
+                            ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </section>
+        )
+      );
+    })
+  }
+</Base>
+
+<style>
+  .barre {
+    position: sticky;
+    top: 3.2rem;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    background: var(--fond);
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--bordure);
+  }
+  @media (max-width: 640px) {
+    .barre {
+      top: 0;
+    }
+  }
+  .progression {
+    flex: 1 1 200px;
+    height: 10px;
+    background: var(--bordure);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .remplissage {
+    height: 100%;
+    width: 0;
+    background: var(--ambre);
+    transition: width 0.3s;
+  }
+  .compte {
+    font-weight: 700;
+    min-width: 4rem;
+  }
+  .eveil {
+    font-weight: 400;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .eveil input {
+    width: auto;
+  }
+  .alerte {
+    position: fixed;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 1rem 1.2rem;
+    background: var(--texte);
+    color: var(--mousse);
+    border-radius: var(--rayon);
+    box-shadow: 0 8px 30px rgb(0 0 0 / 0.3);
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+  .alerte[hidden] {
+    display: none;
+  }
+  .etapes {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+  .etape {
+    background: var(--carte);
+    border: 1px solid var(--bordure);
+    border-radius: var(--rayon);
+    padding: 0.9rem 1rem;
+    box-shadow: var(--ombre);
+  }
+  .etape.complete {
+    opacity: 0.55;
+  }
+  .etape.complete .titre span {
+    text-decoration: line-through;
+  }
+  .titre {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+  .titre input {
+    width: 1.4rem;
+    height: 1.4rem;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+    accent-color: var(--ambre);
+  }
+  .details {
+    margin: 0.4rem 0 0 2.15rem;
+    padding-left: 1rem;
+    color: var(--doux);
+  }
+  .minuteur {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.75rem 0 0 2.15rem;
+  }
+  .temps {
+    font-variant-numeric: tabular-nums;
+    font-size: 2rem;
+    font-weight: 800;
+    min-width: 6.5rem;
+  }
+  .minuteur.actif .temps {
+    color: var(--ambre);
+  }
+  .minuteur.fini .temps {
+    color: var(--vert);
+  }
+  .rappels {
+    flex-basis: 100%;
+    margin: 0;
+    padding-left: 1.2rem;
+    font-size: 0.95rem;
+  }
+  .rappels li.passe {
+    color: var(--vert);
+    text-decoration: line-through;
+  }
+</style>
+
+<script>
+  interface Alerte {
+    aRestant: number;
+    message: string;
+  }
+
+  interface EtatMinuteur {
+    /** Horodatage de fin si en marche. */
+    fin?: number;
+    /** Millisecondes restantes si en pause. */
+    restant?: number;
+    /** Index des alertes déjà sonnées. */
+    alertesPassees: number[];
+  }
+
+  interface Etat {
+    faites: string[];
+    minuteurs: Record<string, EtatMinuteur>;
+  }
+
+  const barre = document.querySelector<HTMLElement>(".barre")!;
+  const cle = barre.dataset.cle!;
+  const etapes = [...document.querySelectorAll<HTMLLIElement>(".etape")];
+  const alerteBoite = document.querySelector<HTMLElement>(".alerte")!;
+  const alerteTexte = alerteBoite.querySelector<HTMLElement>(".alerte-texte")!;
+
+  const charger = (): Etat => {
+    try {
+      const brut = localStorage.getItem(cle);
+      if (brut) return JSON.parse(brut) as Etat;
+    } catch {
+      /* état corrompu : on repart à zéro */
+    }
+    return { faites: [], minuteurs: {} };
+  };
+
+  let etat = charger();
+  const sauver = () => localStorage.setItem(cle, JSON.stringify(etat));
+
+  function majProgression() {
+    const n = etat.faites.length;
+    barre.querySelector<HTMLElement>(".remplissage")!.style.width = `${(n / etapes.length) * 100}%`;
+    barre.querySelector<HTMLElement>(".compte")!.textContent = `${n} / ${etapes.length}`;
+  }
+
+  for (const li of etapes) {
+    const id = li.dataset.id!;
+    const caseFait = li.querySelector<HTMLInputElement>(".fait")!;
+    caseFait.checked = etat.faites.includes(id);
+    li.classList.toggle("complete", caseFait.checked);
+    caseFait.addEventListener("change", () => {
+      etat.faites = caseFait.checked ? [...etat.faites, id] : etat.faites.filter((f) => f !== id);
+      li.classList.toggle("complete", caseFait.checked);
+      sauver();
+      majProgression();
+    });
+  }
+  majProgression();
+
+  /* Son, vibration et notification */
+  let audio: AudioContext | undefined;
+  function bip() {
+    audio ??= new AudioContext();
+    const t0 = audio.currentTime;
+    for (let i = 0; i < 3; i++) {
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.3, t0 + i * 0.4);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + i * 0.4 + 0.3);
+      osc.connect(gain).connect(audio.destination);
+      osc.start(t0 + i * 0.4);
+      osc.stop(t0 + i * 0.4 + 0.3);
+    }
+  }
+
+  function alerter(message: string) {
+    bip();
+    navigator.vibrate?.([300, 150, 300, 150, 300]);
+    alerteTexte.textContent = message;
+    alerteBoite.hidden = false;
+    if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+      new Notification("BrewLab", { body: message });
+    }
+  }
+  alerteBoite.querySelector(".alerte-ok")!.addEventListener("click", () => (alerteBoite.hidden = true));
+
+  /* Minuteurs */
+  const format = (ms: number) => {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    const h = Math.floor(s / 3600);
+    const mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+    const ss = String(s % 60).padStart(2, "0");
+    return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+  };
+
+  const minuteurs = [...document.querySelectorAll<HTMLElement>(".minuteur")].map((el) => {
+    const id = el.closest<HTMLElement>(".etape")!.dataset.id!;
+    const total = Number(el.dataset.minutes) * 60_000;
+    const alertes = JSON.parse(el.dataset.alertes ?? "[]") as Alerte[];
+    const affichage = el.querySelector<HTMLElement>(".temps")!;
+    const boutonDemarrer = el.querySelector<HTMLButtonElement>(".demarrer")!;
+    const titre = el.closest(".etape")!.querySelector(".titre span")!.textContent?.trim() ?? "";
+
+    const lire = (): EtatMinuteur => (etat.minuteurs[id] ??= { alertesPassees: [] });
+    const restant = () => {
+      const m = lire();
+      if (m.fin) return m.fin - Date.now();
+      return m.restant ?? total;
+    };
+
+    function rendre() {
+      const m = lire();
+      const r = restant();
+      affichage.textContent = format(r);
+      el.classList.toggle("actif", Boolean(m.fin) && r > 0);
+      el.classList.toggle("fini", r <= 0);
+      boutonDemarrer.textContent = m.fin ? "Pause" : r < total && r > 0 ? "Reprendre" : "Démarrer";
+      for (const li of el.querySelectorAll<HTMLElement>(".rappels li")) {
+        li.classList.toggle("passe", m.alertesPassees.includes(Number(li.dataset.index)));
+      }
+    }
+
+    function verifier() {
+      const m = lire();
+      if (!m.fin) return;
+      const r = restant();
+      const nouvelles = alertes.filter((a, i) => !m.alertesPassees.includes(i) && r <= a.aRestant * 60_000);
+      if (nouvelles.length > 0) {
+        alertes.forEach((a, i) => {
+          if (nouvelles.includes(a)) m.alertesPassees.push(i);
+        });
+        sauver();
+        alerter(nouvelles.map((a) => a.message).join(" · "));
+      }
+      if (r <= 0) {
+        m.fin = undefined;
+        m.restant = 0;
+        sauver();
+        alerter(`Terminé : ${titre}`);
+      }
+      rendre();
+    }
+
+    boutonDemarrer.addEventListener("click", () => {
+      const m = lire();
+      if (m.fin) {
+        m.restant = m.fin - Date.now();
+        m.fin = undefined;
+      } else {
+        const r = restant() > 0 ? restant() : total;
+        if (r === total) m.alertesPassees = [];
+        m.fin = Date.now() + r;
+        m.restant = undefined;
+        if ("Notification" in window && Notification.permission === "default") {
+          void Notification.requestPermission();
+        }
+      }
+      sauver();
+      rendre();
+    });
+
+    el.querySelector(".reinitialiser")!.addEventListener("click", () => {
+      etat.minuteurs[id] = { alertesPassees: [] };
+      sauver();
+      rendre();
+    });
+
+    rendre();
+    return { verifier, rendre };
+  });
+
+  setInterval(() => minuteurs.forEach((m) => m.verifier()), 500);
+
+  barre.querySelector(".recommencer")!.addEventListener("click", () => {
+    if (!confirm("Effacer toutes les cases cochées et les minuteurs ?")) return;
+    etat = { faites: [], minuteurs: {} };
+    sauver();
+    for (const li of etapes) {
+      li.querySelector<HTMLInputElement>(".fait")!.checked = false;
+      li.classList.remove("complete");
+    }
+    majProgression();
+    minuteurs.forEach((m) => m.rendre());
+  });
+
+  /* Écran allumé pendant le brassage */
+  let verrou: WakeLockSentinel | undefined;
+  const caseEveil = barre.querySelector<HTMLInputElement>(".garder-eveille")!;
+  async function majEveil() {
+    if (!("wakeLock" in navigator)) return;
+    if (caseEveil.checked && document.visibilityState === "visible") {
+      verrou = await navigator.wakeLock.request("screen").catch(() => undefined);
+    } else {
+      await verrou?.release();
+      verrou = undefined;
+    }
+  }
+  if (!("wakeLock" in navigator)) caseEveil.closest("label")!.hidden = true;
+  caseEveil.addEventListener("change", majEveil);
+  document.addEventListener("visibilitychange", majEveil);
+</script>

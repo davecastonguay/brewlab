@@ -1,0 +1,23 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import { url } from "../../lib/url";
+
+const recettes = (await getCollection("recettes")).sort((a, b) => a.data.titre.localeCompare(b.data.titre, "fr"));
+---
+
+<Base titre="Recettes">
+  <h1>Mes recettes</h1>
+  <p class="intro">Les recettes brassées ou à essayer. Chaque recette peut être lancée en mode « jour de brassage ».</p>
+  <div class="grille">
+    {
+      recettes.map((r) => (
+        <a class="carte" href={url(`/recettes/${r.id}`)}>
+          <span class="surtitre">{r.data.style}</span>
+          <h3>{r.data.titre}</h3>
+          <p>{r.data.resume}</p>
+        </a>
+      ))
+    }
+  </div>
+</Base>

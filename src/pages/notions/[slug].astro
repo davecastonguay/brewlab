@@ -1,0 +1,40 @@
+---
+import { getCollection, render } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import { slugNotion, url } from "../../lib/url";
+
+export async function getStaticPaths() {
+  const notions = (await getCollection("notions")).sort((a, b) => a.data.ordre - b.data.ordre);
+  return notions.map((notion, i) => ({
+    params: { slug: slugNotion(notion.id) },
+    props: { notion, precedente: notions[i - 1], suivante: notions[i + 1] },
+  }));
+}
+
+const { notion, precedente, suivante } = Astro.props;
+const { Content } = await render(notion);
+---
+
+<Base titre={notion.data.titre} description={notion.data.resume}>
+  <a href={url("/notions")}>← Toutes les notions</a>
+  <h1>{notion.data.titre}</h1>
+  <p class="intro">{notion.data.resume}</p>
+  <article class="prose">
+    <Content />
+  </article>
+  <nav class="suite">
+    {precedente ? <a href={url(`/notions/${slugNotion(precedente.id)}`)}>← {precedente.data.titre}</a> : <span />}
+    {suivante && <a href={url(`/notions/${slugNotion(suivante.id)}`)}>{suivante.data.titre} →</a>}
+  </nav>
+</Base>
+
+<style>
+  .suite {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--bordure);
+  }
+</style>

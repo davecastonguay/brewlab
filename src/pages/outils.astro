@@ -1,0 +1,150 @@
+---
+import Base from "../layouts/Base.astro";
+import { url } from "../lib/url";
+---
+
+<Base titre="Outils">
+  <h1>Calculateurs</h1>
+  <p class="intro">
+    Les calculs qu'on fait à chaque brassin. Les explications sont dans la fiche{" "}
+    <a href={url("/notions/mesures")}>Les mesures</a>.
+  </p>
+
+  <div class="grille calculs">
+    <form class="carte" data-calcul="abv">
+      <h3>% d'alcool</h3>
+      <div class="champs">
+        <label>Densité initiale <input name="di" type="number" step="0.001" min="1" max="1.2" value="1.045" /></label>
+        <label>Densité finale <input name="df" type="number" step="0.001" min="0.98" max="1.2" value="1.010" /></label>
+      </div>
+      <output></output>
+    </form>
+
+    <form class="carte" data-calcul="brix">
+      <h3>Réfractomètre : Brix → densité</h3>
+      <div class="champs">
+        <label>Lecture (°Brix) <input name="brix" type="number" step="0.1" min="0" max="40" value="11.5" /></label>
+      </div>
+      <output></output>
+      <p class="note">Valide avant la fermentation seulement : l'alcool fausse la lecture.</p>
+    </form>
+
+    <form class="carte" data-calcul="temperature">
+      <h3>Densimètre : correction de température</h3>
+      <div class="champs">
+        <label>Lecture <input name="lecture" type="number" step="0.001" min="0.98" max="1.2" value="1.040" /></label>
+        <label>Température du moût (°C) <input name="temp" type="number" step="0.5" value="30" /></label>
+        <label>Calibration (°C) <input name="calib" type="number" step="0.5" value="20" /></label>
+      </div>
+      <output></output>
+    </form>
+
+    <form class="carte" data-calcul="ibu">
+      <h3>Amertume (IBU) d'un ajout</h3>
+      <div class="champs">
+        <label>Houblon (g) <input name="g" type="number" step="1" min="0" value="25" /></label>
+        <label>Acides alpha (%) <input name="aa" type="number" step="0.1" min="0" value="6.5" /></label>
+        <label>Minutes d'ébullition <input name="min" type="number" step="1" min="0" value="60" /></label>
+        <label>Volume (L) <input name="vol" type="number" step="0.5" min="1" value="20" /></label>
+        <label>Densité du moût <input name="dens" type="number" step="0.001" min="1" value="1.045" /></label>
+      </div>
+      <output></output>
+      <p class="note">Formule de Tinseth. Additionne les ajouts pour obtenir le total de la recette.</p>
+    </form>
+
+    <form class="carte" data-calcul="amorcage">
+      <h3>Sucre d'amorçage (bouteilles)</h3>
+      <div class="champs">
+        <label>Volume de bière (L) <input name="vol" type="number" step="0.5" min="1" value="19" /></label>
+        <label>
+          CO₂ visé (volumes)
+          <select name="co2">
+            <option value="2.0">2,0 · stout, bière anglaise</option>
+            <option value="2.4" selected>2,4 · pale ale, IPA</option>
+            <option value="2.7">2,7 · lager</option>
+            <option value="3.0">3,0 · belge, weizen</option>
+          </select>
+        </label>
+        <label>Temp. max de fermentation (°C) <input name="temp" type="number" step="0.5" value="20" /></label>
+      </div>
+      <output></output>
+    </form>
+  </div>
+</Base>
+
+<style>
+  .calculs {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .champs {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0.75rem 0;
+  }
+  label {
+    display: grid;
+    gap: 0.2rem;
+    font-size: 0.9rem;
+  }
+  output {
+    display: block;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--ambre);
+  }
+  .note {
+    font-size: 0.85rem;
+    margin-top: 0.5rem !important;
+  }
+</style>
+
+<script>
+  import {
+    abv,
+    attenuation,
+    brixVersDensite,
+    correctionTemperature,
+    ibuTinseth,
+    sucreAmorcage,
+  } from "../lib/calculs";
+
+  const nombre = (n: number, decimales: number) =>
+    n.toLocaleString("fr-CA", { minimumFractionDigits: decimales, maximumFractionDigits: decimales });
+
+  type Calcul = "abv" | "brix" | "temperature" | "ibu" | "amorcage";
+
+  function calculer(type: Calcul, v: (nom: string) => number): string {
+    switch (type) {
+      case "abv":
+        return `${nombre(abv(v("di"), v("df")), 1)} % · atténuation ${nombre(attenuation(v("di"), v("df")), 0)} %`;
+      case "brix":
+        return nombre(brixVersDensite(v("brix")), 3);
+      case "temperature":
+        return nombre(correctionTemperature(v("lecture"), v("temp"), v("calib")), 3);
+      case "ibu":
+        return `${nombre(ibuTinseth(v("g"), v("aa"), v("min"), v("vol"), v("dens")), 1)} IBU`;
+      case "amorcage": {
+        const g = sucreAmorcage(v("vol"), v("co2"), v("temp"));
+        return `${nombre(g, 0)} g de sucre de maïs`;
+      }
+      default: {
+        const jamais: never = type;
+        return jamais;
+      }
+    }
+  }
+
+  for (const form of document.querySelectorAll<HTMLFormElement>("form[data-calcul]")) {
+    const type = form.dataset.calcul as Calcul;
+    const sortie = form.querySelector("output")!;
+    const maj = () => {
+      const donnees = new FormData(form);
+      const v = (nom: string) => Number(donnees.get(nom));
+      const resultat = calculer(type, v);
+      sortie.textContent = resultat.includes("NaN") ? "—" : resultat;
+    };
+    form.addEventListener("input", maj);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    maj();
+  }
+</script>

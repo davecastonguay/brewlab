@@ -1,0 +1,63 @@
+---
+import { getCollection, render } from "astro:content";
+import { Image } from "astro:assets";
+import Base from "../../layouts/Base.astro";
+import { abv } from "../../lib/calculs";
+import { STATUTS } from "../../lib/statuts";
+import { dateFr, url } from "../../lib/url";
+
+export async function getStaticPaths() {
+  const batches = await getCollection("batches");
+  return batches.map((batch) => ({ params: { slug: batch.id }, props: { batch } }));
+}
+
+const { batch } = Astro.props;
+const b = batch.data;
+const { Content } = await render(batch);
+const recette = (await getCollection("recettes")).find((r) => r.id === b.recette);
+const { densiteInitiale: di, densiteFinale: df, volumeLitres } = b.mesures;
+const fmt = (n: number) => n.toFixed(3).replace(".", ",");
+---
+
+<Base titre={`Batch #${b.numero} · ${b.titre}`}>
+  <a href={url("/journal")}>← Tout le journal</a>
+  <span class="surtitre" style="display:block;margin-top:1rem">Batch #{b.numero} · {dateFr(b.date)}</span>
+  <h1>{b.titre}</h1>
+  <p>
+    <span class={`badge ${STATUTS[b.statut].classe}`}>{STATUTS[b.statut].label}</span>
+    {recette && <> Recette : <a href={url(`/recettes/${recette.id}`)}>{recette.data.titre}</a></>}
+    {b.lieu && <> · {b.lieu}</>}
+    {b.brasseurs.length > 0 && <> · avec {b.brasseurs.join(", ")}</>}
+  </p>
+
+  <div class="chiffres">
+    <div class="chiffre"><strong>{di ? fmt(di) : "—"}</strong><span>Densité initiale</span></div>
+    <div class="chiffre"><strong>{df ? fmt(df) : "—"}</strong><span>Densité finale</span></div>
+    <div class="chiffre">
+      <strong>{di && df ? `${abv(di, df).toFixed(1).replace(".", ",")} %` : "—"}</strong><span>Alcool</span>
+    </div>
+    <div class="chiffre"><strong>{volumeLitres ? `${volumeLitres} L` : "—"}</strong><span>Volume</span></div>
+  </div>
+
+  <article class="prose">
+    <Content />
+  </article>
+
+  {
+    b.photos.length > 0 && (
+      <>
+        <h2>Photos</h2>
+        <div class="galerie">
+          {b.photos.map((p) => (
+            <figure>
+              <a href={p.src.src} target="_blank" rel="noopener">
+                <Image src={p.src} alt={p.legende} width={400} />
+              </a>
+              <figcaption>{p.legende}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </>
+    )
+  }
+</Base>

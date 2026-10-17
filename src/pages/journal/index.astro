@@ -1,0 +1,31 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import { STATUTS } from "../../lib/statuts";
+import { dateFr, url } from "../../lib/url";
+
+const batches = (await getCollection("batches")).sort((a, b) => b.data.numero - a.data.numero);
+const recettes = await getCollection("recettes");
+const nomRecette = (id: string) => recettes.find((r) => r.id === id)?.data.titre ?? id;
+---
+
+<Base titre="Journal des brassins">
+  <h1>Journal des brassins</h1>
+  <p class="intro">Chaque batch : la date, la recette, les mesures, les photos et ce que j'en ai appris.</p>
+  <div class="grille">
+    {
+      batches.map((b) => (
+        <a class="carte" href={url(`/journal/${b.id}`)}>
+          <span class="surtitre">
+            Batch #{b.data.numero} · {dateFr(b.data.date)}
+          </span>
+          <h3>{b.data.titre}</h3>
+          <p>{nomRecette(b.data.recette)}</p>
+          <p style="margin-top:.5rem">
+            <span class={`badge ${STATUTS[b.data.statut].classe}`}>{STATUTS[b.data.statut].label}</span>
+          </p>
+        </a>
+      ))
+    }
+  </div>
+</Base>
