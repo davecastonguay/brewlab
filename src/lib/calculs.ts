@@ -44,3 +44,26 @@ export function co2Residuel(temperatureC: number): number {
 export function sucreAmorcage(volumeLitres: number, volumesCible: number, temperatureC: number): number {
   return Math.max(0, (volumesCible - co2Residuel(temperatureC)) * volumeLitres * 4.014);
 }
+
+/** % d'alcool à partir de lectures de densimètre brutes, corrigées selon leur température. */
+export function abvCorrige(
+  di: number,
+  tempDi: number,
+  df: number,
+  tempDf: number,
+  calibrationC = 20,
+): { di: number; df: number; abv: number } {
+  const diC = correctionTemperature(di, tempDi, calibrationC);
+  const dfC = correctionTemperature(df, tempDf, calibrationC);
+  return { di: diC, df: dfC, abv: abv(diC, dfC) };
+}
+
+/** Ratios de dosage du cours. */
+export const DOSAGES = {
+  /** PBW (savon) : ml par litre d'eau chaude. */
+  pbwMlParLitre: 2.5,
+  /** Bioxy (désinfectant) : ml (ou g) par litre d'eau. */
+  bioxyMlParLitre: 2,
+  /** Sucre de maïs : ml par bouteille de 341 ml. */
+  sucreMlParBouteille: 2,
+} as const;

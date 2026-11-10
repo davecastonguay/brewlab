@@ -268,7 +268,7 @@ export function etapesPourRecette(r: Recette): Etape[] {
       titre: "Laver le Vevor tout de suite",
       details: [
         "Savon à vaisselle, comme un chaudron : cuve, pompe, tuyau et valve.",
-        "Bien rincer. PBW pour les dépôts tenaces.",
+        "Bien rincer. PBW pour les dépôts tenaces : 2,5 ml par litre d'eau chaude.",
       ],
     },
     {
@@ -310,7 +310,7 @@ export function etapesPourRecette(r: Recette): Etape[] {
     details: [
       "Mesurer la densité finale (DF) et la noter.",
       "Laver les bouteilles et les désinfecter (bain d'eau javellisée, bien rincer).",
-      "2 ml de sucre de maïs par bouteille (ou voir le calculateur dans Outils), puis capsuler.",
+      "2 ml de sucre de maïs par bouteille de 341 ml (ou voir le calculateur dans Outils), puis capsuler.",
       "2 semaines à la température de la pièce, puis au frigo. Santé !",
     ],
   });

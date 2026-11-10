@@ -19,6 +19,8 @@ La différence, c'est le sucre que la levure a mangé, donc l'**alcool** :
 >
 > (1,043 − 1,010) × 131,25 = **4,3 %**
 
+Attention : le densimètre est calibré à **20 °C**. Il faut **corriger** chaque lecture selon la température du liquide **avant** de calculer l'alcool. Un moût à 30 °C qui affiche 1,040 vaut en fait environ 1,042. Le calculateur de % d'alcool dans *Outils* fait cette correction.
+
 On mesure avec un **densimètre** (flotteur en verre) ou un **réfractomètre** (quelques gouttes, en degrés Brix). Le calculateur dans *Outils* fait les conversions.
 
 ### Les autres chiffres
@@ -31,6 +33,7 @@ On mesure avec un **densimètre** (flotteur en verre) ou un **réfractomètre** 
 
 ## Pour aller plus loin
 
-- Le densimètre est calibré à **20 °C** : un moût chaud donne une lecture trop basse.
+- Le densimètre est calibré à **20 °C** : un moût chaud donne une lecture trop basse, un moût froid une lecture un peu trop haute.
+- Dans le journal, noter la température de lecture (`temperatureDensiteInitiale`, `temperatureDensiteFinale`) : la densité affichée et l'alcool sont alors corrigés.
 - Le réfractomètre est faussé par l'alcool : il n'est fiable qu'**avant** la fermentation (ou avec une correction).
 - **Efficacité** : le pourcentage du sucre du grain qu'on réussit vraiment à extraire. Sur un système tout-en-un, on obtient souvent 65 à 75 %. En notant sa DI à chaque brassin, on apprend à connaître son système.

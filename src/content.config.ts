@@ -93,7 +93,11 @@ const batches = defineCollection({
       mesures: z
         .object({
           densiteInitiale: z.number().optional(),
+          /** Température (°C) du moût lors de la lecture de la DI. Si fournie, la DI est corrigée à 20 °C. */
+          temperatureDensiteInitiale: z.number().optional(),
           densiteFinale: z.number().optional(),
+          /** Température (°C) de la bière lors de la lecture de la DF. */
+          temperatureDensiteFinale: z.number().optional(),
           volumeLitres: z.number().optional(),
         })
         .default({}),

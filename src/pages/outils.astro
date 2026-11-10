@@ -1,6 +1,9 @@
 ---
 import Base from "../layouts/Base.astro";
 import { url } from "../lib/url";
+import { DOSAGES } from "../lib/calculs";
+
+const ml = (n: number) => n.toLocaleString("fr-CA");
 ---
 
 <Base titre="Outils">
@@ -14,10 +17,19 @@ import { url } from "../lib/url";
     <form class="carte" data-calcul="abv">
       <h3>% d'alcool</h3>
       <div class="champs">
-        <label>Densité initiale <input name="di" type="number" step="0.001" min="1" max="1.2" value="1.045" /></label>
-        <label>Densité finale <input name="df" type="number" step="0.001" min="0.98" max="1.2" value="1.010" /></label>
+        <div class="paire">
+          <label>DI lue <input name="di" type="number" step="0.001" min="1" max="1.2" value="1.045" /></label>
+          <label>à (°C) <input name="tdi" type="number" step="0.5" value="20" /></label>
+        </div>
+        <div class="paire">
+          <label>DF lue <input name="df" type="number" step="0.001" min="0.98" max="1.2" value="1.010" /></label>
+          <label>à (°C) <input name="tdf" type="number" step="0.5" value="20" /></label>
+        </div>
+        <label>Calibration du densimètre (°C) <input name="calib" type="number" step="0.5" value="20" /></label>
       </div>
       <output></output>
+      <p class="note" data-detail></p>
+      <p class="note">Les densités sont corrigées selon la température de lecture avant le calcul.</p>
     </form>
 
     <form class="carte" data-calcul="brix">
@@ -69,7 +81,47 @@ import { url } from "../lib/url";
       </div>
       <output></output>
     </form>
+
+    <form class="carte" data-calcul="dosages">
+      <h3>Nettoyage et désinfection</h3>
+      <div class="champs">
+        <label>Eau (L) <input name="eau" type="number" step="0.5" min="0" value="4" /></label>
+      </div>
+      <output></output>
+      <p class="note" data-detail></p>
+    </form>
+
+    <form class="carte" data-calcul="bouteilles">
+      <h3>Sucre par bouteille</h3>
+      <div class="champs">
+        <label>Nombre de bouteilles (341 ml) <input name="n" type="number" step="1" min="0" value="55" /></label>
+      </div>
+      <output></output>
+      <p class="note">La mesure rapide du cours. Pour un dosage selon le style, voir le sucre d'amorçage.</p>
+    </form>
   </div>
+
+  <h2>Ratios à retenir</h2>
+  <table>
+    <thead><tr><th>Produit</th><th>Ratio</th><th>Exemples</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>PBW</strong> (savon)</td>
+        <td>{ml(DOSAGES.pbwMlParLitre)} ml par litre d'eau <strong>chaude</strong></td>
+        <td>4 L → {ml(4 * DOSAGES.pbwMlParLitre)} ml · 20 L → {ml(20 * DOSAGES.pbwMlParLitre)} ml</td>
+      </tr>
+      <tr>
+        <td><strong>Bioxy</strong> (désinfectant)</td>
+        <td>{ml(DOSAGES.bioxyMlParLitre)} ml (ou g) par litre d'eau, ~5 min de contact</td>
+        <td>500 ml → {ml(0.5 * DOSAGES.bioxyMlParLitre)} ml · 4 L → {ml(4 * DOSAGES.bioxyMlParLitre)} ml</td>
+      </tr>
+      <tr>
+        <td><strong>Sucre de maïs</strong> (embouteillage)</td>
+        <td>{ml(DOSAGES.sucreMlParBouteille)} ml par bouteille de 341 ml</td>
+        <td>24 bouteilles → {ml(24 * DOSAGES.sucreMlParBouteille)} ml · 55 → {ml(55 * DOSAGES.sucreMlParBouteille)} ml</td>
+      </tr>
+    </tbody>
+  </table>
 </Base>
 
 <style>
@@ -92,6 +144,11 @@ import { url } from "../lib/url";
     font-weight: 800;
     color: var(--ambre);
   }
+  .paire {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 0.5rem;
+  }
   .note {
     font-size: 0.85rem;
     margin-top: 0.5rem !important;
@@ -100,8 +157,9 @@ import { url } from "../lib/url";
 
 <script>
   import {
-    abv,
+    abvCorrige,
     attenuation,
+    DOSAGES,
     brixVersDensite,
     correctionTemperature,
     ibuTinseth,
@@ -111,12 +169,27 @@ import { url } from "../lib/url";
   const nombre = (n: number, decimales: number) =>
     n.toLocaleString("fr-CA", { minimumFractionDigits: decimales, maximumFractionDigits: decimales });
 
-  type Calcul = "abv" | "brix" | "temperature" | "ibu" | "amorcage";
+  type Calcul = "abv" | "brix" | "temperature" | "ibu" | "amorcage" | "dosages" | "bouteilles";
+  type Resultat = string | { valeur: string; detail: string };
 
-  function calculer(type: Calcul, v: (nom: string) => number): string {
+  function calculer(type: Calcul, v: (nom: string) => number): Resultat {
     switch (type) {
-      case "abv":
-        return `${nombre(abv(v("di"), v("df")), 1)} % · atténuation ${nombre(attenuation(v("di"), v("df")), 0)} %`;
+      case "abv": {
+        const r = abvCorrige(v("di"), v("tdi"), v("df"), v("tdf"), v("calib"));
+        return {
+          valeur: `${nombre(r.abv, 1)} % · atténuation ${nombre(attenuation(r.di, r.df), 0)} %`,
+          detail: `Densités corrigées : DI ${nombre(r.di, 3)} · DF ${nombre(r.df, 3)}`,
+        };
+      }
+      case "dosages": {
+        const eau = v("eau");
+        return {
+          valeur: `${nombre(eau * DOSAGES.pbwMlParLitre, 1)} ml de PBW`,
+          detail: `ou ${nombre(eau * DOSAGES.bioxyMlParLitre, 1)} ml de Bioxy pour désinfecter (${nombre(DOSAGES.pbwMlParLitre, 1)} ml/L et ${nombre(DOSAGES.bioxyMlParLitre, 0)} ml/L)`,
+        };
+      }
+      case "bouteilles":
+        return `${nombre(v("n") * DOSAGES.sucreMlParBouteille, 0)} ml de sucre de maïs`;
       case "brix":
         return nombre(brixVersDensite(v("brix")), 3);
       case "temperature":
@@ -137,11 +210,15 @@ import { url } from "../lib/url";
   for (const form of document.querySelectorAll<HTMLFormElement>("form[data-calcul]")) {
     const type = form.dataset.calcul as Calcul;
     const sortie = form.querySelector("output")!;
+    const detail = form.querySelector<HTMLElement>("[data-detail]");
     const maj = () => {
       const donnees = new FormData(form);
       const v = (nom: string) => Number(donnees.get(nom));
-      const resultat = calculer(type, v);
-      sortie.textContent = resultat.includes("NaN") ? "—" : resultat;
+      const r = calculer(type, v);
+      const { valeur, detail: texte } = typeof r === "string" ? { valeur: r, detail: "" } : r;
+      const invalide = valeur.includes("NaN");
+      sortie.textContent = invalide ? "—" : valeur;
+      if (detail) detail.textContent = invalide ? "" : texte;
     };
     form.addEventListener("input", maj);
     form.addEventListener("submit", (e) => e.preventDefault());

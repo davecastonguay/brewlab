@@ -21,6 +21,8 @@ Après l'ébullition, le moût est stérile… et c'est un festin pour n'importe
 | **Bioxy** | Désinfectant | 2 g (ou 2 ml) par litre, soit **1 ml dans 500 ml** d'eau | Vaporiser, laisser agir **~5 min** |
 | Savon à vaisselle | Nettoyage du Vevor | — | Comme un chaudron, puis bien rincer |
 
+Le calculateur *Nettoyage et désinfection* dans *Outils* donne les quantités pour n'importe quel volume d'eau.
+
 Truc du cours : garder le Bioxy dilué dans une **bouteille à vaporiser**, pratique pour le robinet, le refroidisseur, le fermenteur…
 
 ### La règle d'or

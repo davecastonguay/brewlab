@@ -2,7 +2,7 @@
 import { getCollection, render } from "astro:content";
 import { Image } from "astro:assets";
 import Base from "../../layouts/Base.astro";
-import { abv } from "../../lib/calculs";
+import { abv, correctionTemperature } from "../../lib/calculs";
 import { STATUTS } from "../../lib/statuts";
 import { dateFr, url } from "../../lib/url";
 
@@ -15,7 +15,13 @@ const { batch } = Astro.props;
 const b = batch.data;
 const { Content } = await render(batch);
 const recette = (await getCollection("recettes")).find((r) => r.id === b.recette);
-const { densiteInitiale: di, densiteFinale: df, volumeLitres } = b.mesures;
+const m = b.mesures;
+const corriger = (lecture: number | undefined, temp: number | undefined) =>
+  lecture !== undefined && temp !== undefined ? correctionTemperature(lecture, temp) : lecture;
+const di = corriger(m.densiteInitiale, m.temperatureDensiteInitiale);
+const df = corriger(m.densiteFinale, m.temperatureDensiteFinale);
+const corrige = m.temperatureDensiteInitiale !== undefined || m.temperatureDensiteFinale !== undefined;
+const volumeLitres = m.volumeLitres;
 const fmt = (n: number) => n.toFixed(3).replace(".", ",");
 ---
 
@@ -38,6 +44,20 @@ const fmt = (n: number) => n.toFixed(3).replace(".", ",");
     </div>
     <div class="chiffre"><strong>{volumeLitres ? `${volumeLitres} L` : "—"}</strong><span>Volume</span></div>
   </div>
+  {
+    corrige && (
+      <p class="note-correction">
+        Densités corrigées à 20 °C selon la température de lecture
+        {m.temperatureDensiteInitiale !== undefined && m.densiteInitiale && (
+          <> (DI lue : {fmt(m.densiteInitiale)} à {m.temperatureDensiteInitiale} °C)</>
+        )}
+        {m.temperatureDensiteFinale !== undefined && m.densiteFinale && (
+          <> (DF lue : {fmt(m.densiteFinale)} à {m.temperatureDensiteFinale} °C)</>
+        )}
+        .
+      </p>
+    )
+  }
 
   <article class="prose">
     <Content />
@@ -61,3 +81,11 @@ const fmt = (n: number) => n.toFixed(3).replace(".", ",");
     )
   }
 </Base>
+
+<style>
+  .note-correction {
+    font-size: 0.85rem;
+    color: var(--doux);
+    margin-top: -0.25rem;
+  }
+</style>

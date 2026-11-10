@@ -1,0 +1,266 @@
+---
+import Base from "../layouts/Base.astro";
+import { url } from "../lib/url";
+import {
+  HOUBLONS,
+  LEVURES,
+  MALTS,
+  STYLES,
+  TYPES_MALT,
+  USAGES_HOUBLON,
+  couleurSrm,
+  lovibondVersSrm,
+  plage,
+  srmVersEbc,
+  type TypeMalt,
+} from "../lib/ingredients";
+
+const typesMalt = Object.keys(TYPES_MALT) as TypeMalt[];
+const ebc = ([min, max]: [number, number]) =>
+  plage([Math.round(srmVersEbc(lovibondVersSrm(min))), Math.round(srmVersEbc(lovibondVersSrm(max)))]);
+const couleurMalt = (l: [number, number]) => couleurSrm(lovibondVersSrm((l[0] + l[1]) / 2));
+const densite = ([min, max]: [number, number]) => `${min.toFixed(3).replace(".", ",")}–${max.toFixed(3).replace(".", ",")}`;
+const etoiles = (n: number) => "●".repeat(n) + "○".repeat(3 - n);
+---
+
+<Base titre="Ingrédients" description="Malts, houblons, levures et styles : de quoi choisir la prochaine recette.">
+  <h1>Ingrédients</h1>
+  <p class="intro">
+    Les malts, houblons et levures courants, avec leurs chiffres et leur usage. Pour choisir la prochaine recette :
+    partir d'un style, puis regarder les ingrédients qui le composent.
+  </p>
+
+  <nav class="sommaire" aria-label="Sections">
+    <a href="#styles">Styles</a>
+    <a href="#malts">Malts</a>
+    <a href="#houblons">Houblons</a>
+    <a href="#levures">Levures</a>
+  </nav>
+
+  <label class="recherche">
+    Filtrer (nom, arôme, style…)
+    <input type="search" id="filtre" placeholder="ex. agrumes, stout, Citra" />
+  </label>
+
+  <h2 id="styles">Choisir un style</h2>
+  <p>Difficulté : ● facile, ●●● demande du matériel ou de la précision.</p>
+  <div class="grille styles">
+    {
+      STYLES.map((s) => (
+        <article class="carte filtrable">
+          <div class="tete">
+            <span class="pastille" style={`background:${couleurSrm((s.srm[0] + s.srm[1]) / 2)}`} />
+            <h3>{s.nom}</h3>
+            <span class="difficulte" title={`Difficulté ${s.difficulte} sur 3`}>{etoiles(s.difficulte)}</span>
+          </div>
+          <dl>
+            <dt>Alcool</dt><dd>{plage(s.abv, 1)} %</dd>
+            <dt>DI</dt><dd>{densite(s.di)}</dd>
+            <dt>IBU</dt><dd>{plage(s.ibu)}</dd>
+            <dt>Couleur</dt><dd>{plage([Math.round(srmVersEbc(s.srm[0])), Math.round(srmVersEbc(s.srm[1]))])} EBC</dd>
+          </dl>
+          <p><strong>Malts :</strong> {s.malts}</p>
+          <p><strong>Houblons :</strong> {s.houblons}</p>
+          <p><strong>Levure :</strong> {s.levure}</p>
+          <p class="note">{s.note}</p>
+        </article>
+      ))
+    }
+  </div>
+
+  <h2 id="malts">Malts</h2>
+  <p>
+    La couleur se mesure en <strong>degrés Lovibond (°L)</strong> pour le grain, et en <strong>EBC</strong> ou SRM
+    pour la bière. Le « % max » est la part conseillée du grain total. Plus de détails dans
+    <a href={url("/notions/malt-et-amidon")}>Le malt et l'amidon</a>.
+  </p>
+  {
+    typesMalt.map((t) => (
+      <>
+        <h3>{TYPES_MALT[t]}</h3>
+        <table>
+          <thead>
+            <tr><th>Malt</th><th>°L</th><th>EBC</th><th>% max</th><th>Saveurs</th><th>Styles</th></tr>
+          </thead>
+          <tbody>
+            {MALTS.filter((m) => m.type === t).map((m) => (
+              <tr class="filtrable">
+                <td>
+                  <span class="pastille" style={`background:${couleurMalt(m.lovibond)}`} />
+                  <strong>{m.nom}</strong>
+                </td>
+                <td>{plage(m.lovibond)}</td>
+                <td>{ebc(m.lovibond)}</td>
+                <td>{m.maxPourcent} %</td>
+                <td>{m.saveurs}</td>
+                <td>{m.styles}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </>
+    ))
+  }
+
+  <h2 id="houblons">Houblons</h2>
+  <p>
+    Les <strong>acides alpha (AA %)</strong> donnent l'amertume : un houblon à 14 % amérit deux fois plus qu'à 7 %.
+    Un houblon <em>amérisant</em> va au début de l'ébullition, un <em>aromatique</em> à la fin, au whirlpool ou en
+    dry hop. Voir <a href={url("/notions/houblon")}>Le houblon</a>.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Houblon</th><th>AA %</th><th>Usage</th><th>Arômes</th><th>Styles</th><th>Remplacer par</th></tr>
+    </thead>
+    <tbody>
+      {
+        HOUBLONS.map((h) => (
+          <tr class="filtrable">
+            <td>
+              <strong>{h.nom}</strong>
+              <br />
+              <span class="petit">{h.origine}</span>
+            </td>
+            <td>{plage(h.alpha, 1)}</td>
+            <td><span class={`badge ${h.usage === "aromatique" ? "vert" : ""}`}>{USAGES_HOUBLON[h.usage]}</span></td>
+            <td>{h.aromes}</td>
+            <td>{h.styles}</td>
+            <td>{h.substituts}</td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+
+  <h2 id="levures">Levures</h2>
+  <p>
+    L'<strong>atténuation</strong> dit quelle part du sucre la levure mange : plus elle est haute, plus la bière est
+    sèche. La <strong>floculation</strong> dit à quelle vitesse elle tombe au fond (élevée = bière claire plus vite).
+    Voir <a href={url("/notions/levure-et-fermentation")}>La levure et la fermentation</a>.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Famille</th><th>Atténuation</th><th>Temp.</th><th>Floculation</th><th>Profil</th><th>Styles</th></tr>
+    </thead>
+    <tbody>
+      {
+        LEVURES.map((l) => (
+          <tr class="filtrable">
+            <td>
+              <strong>{l.nom}</strong>
+              <br />
+              <span class="petit">{l.exemples}</span>
+            </td>
+            <td>{plage(l.attenuation)} %</td>
+            <td>{plage(l.temperature)} °C</td>
+            <td>{l.floculation}</td>
+            <td>{l.profil}</td>
+            <td>{l.styles}</td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+
+  <p class="note">
+    Valeurs typiques : elles varient selon le malteur, la récolte et le fabricant. Vérifier l'étiquette du sac ou du
+    paquet avant de calculer une recette.
+  </p>
+</Base>
+
+<style>
+  .sommaire {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  .sommaire a {
+    padding: 0.3rem 0.8rem;
+    border: 2px solid var(--ambre);
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .recherche {
+    display: grid;
+    gap: 0.25rem;
+    max-width: 24rem;
+    font-size: 0.9rem;
+  }
+  .styles {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+  .styles .carte p {
+    margin: 0.35rem 0 0;
+    font-size: 0.9rem;
+    color: var(--texte);
+  }
+  .styles .carte p.note {
+    color: var(--doux);
+    font-style: italic;
+  }
+  .tete {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .tete h3 {
+    flex: 1;
+    margin: 0;
+  }
+  .difficulte {
+    color: var(--ambre);
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+  }
+  dl {
+    display: grid;
+    grid-template-columns: auto 1fr auto 1fr;
+    gap: 0.15rem 0.5rem;
+    margin: 0.6rem 0;
+    font-size: 0.85rem;
+  }
+  dt {
+    color: var(--doux);
+  }
+  dd {
+    margin: 0;
+    font-weight: 700;
+  }
+  .pastille {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 50%;
+    border: 1px solid rgb(0 0 0 / 0.15);
+    margin-right: 0.35rem;
+    vertical-align: -0.1rem;
+  }
+  .petit {
+    font-size: 0.8rem;
+    color: var(--doux);
+  }
+  .note {
+    font-size: 0.85rem;
+    color: var(--doux);
+  }
+  .cache {
+    display: none;
+  }
+</style>
+
+<script>
+  const champ = document.querySelector<HTMLInputElement>("#filtre")!;
+  const elements = [...document.querySelectorAll<HTMLElement>(".filtrable")];
+  const normaliser = (t: string) =>
+    t
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "");
+  champ.addEventListener("input", () => {
+    const q = normaliser(champ.value.trim());
+    for (const el of elements) el.classList.toggle("cache", q !== "" && !normaliser(el.textContent ?? "").includes(q));
+  });
+</script>
