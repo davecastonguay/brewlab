@@ -73,15 +73,78 @@ table {
 
 @media (max-width: 640px) {
   table {
-    display: block;
-    overflow-x: auto;
     font-size: 0.85rem;
-    hyphens: auto;
   }
 
   th,
   td {
-    padding: 0.4rem 0.35rem;
+    padding: 0.45rem 0.35rem;
+    overflow-wrap: break-word;
+  }
+
+  th {
+    white-space: nowrap;
+  }
+
+  /* Tableaux larges : chaque rangée devient une fiche, avec l'étiquette de colonne (data-label). */
+  table.fiches,
+  table.fiches tbody {
+    display: block;
+  }
+
+  table.fiches thead {
+    display: none;
+  }
+
+  table.fiches tr {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--bordure);
+  }
+
+  table.fiches td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+
+  table.fiches td.titre {
+    flex-basis: 100%;
+    font-size: 1rem;
+  }
+
+  table.fiches td[data-label]::before {
+    content: attr(data-label) " ";
+    color: var(--doux);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  table.fiches td.texte {
+    flex-basis: 100%;
+  }
+
+  table.fiches td.texte::before {
+    content: attr(data-label) " : ";
+  }
+}
+
+/* Très petits écrans (iPhone SE) : on permet la césure plutôt qu'un débordement. */
+@media (max-width: 400px) {
+  table {
+    font-size: 0.8rem;
+  }
+
+  th,
+  td {
+    padding: 0.4rem 0.25rem;
+    hyphens: auto;
+  }
+
+  th {
+    white-space: normal;
   }
 }
 
@@ -163,13 +226,15 @@ blockquote p {
   .entete nav {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.35rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.3rem;
     overflow: visible;
   }
 
   .entete nav a {
     text-align: center;
+    font-size: 0.82rem;
+    padding: 0.35rem 0.15rem;
   }
 
   .entete nav a:not([aria-current="page"]) {

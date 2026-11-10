@@ -71,29 +71,29 @@ const etoiles = (n: number) => "●".repeat(n) + "○".repeat(3 - n);
   <h2 id="malts">Malts</h2>
   <p>
     La couleur se mesure en <strong>degrés Lovibond (°L)</strong> pour le grain, et en <strong>EBC</strong> ou SRM
-    pour la bière. Le « % max » est la part conseillée du grain total. Plus de détails dans
+    pour la bière. Le « % max » est la part conseillée du grain total. Plus de détails dans{" "}
     <a href={url("/notions/malt-et-amidon")}>Le malt et l'amidon</a>.
   </p>
   {
     typesMalt.map((t) => (
       <>
         <h3>{TYPES_MALT[t]}</h3>
-        <table>
+        <table class="fiches">
           <thead>
             <tr><th>Malt</th><th>°L</th><th>EBC</th><th>% max</th><th>Saveurs</th><th>Styles</th></tr>
           </thead>
           <tbody>
             {MALTS.filter((m) => m.type === t).map((m) => (
               <tr class="filtrable">
-                <td>
+                <td class="titre">
                   <span class="pastille" style={`background:${couleurMalt(m.lovibond)}`} />
                   <strong>{m.nom}</strong>
                 </td>
-                <td>{plage(m.lovibond)}</td>
-                <td>{ebc(m.lovibond)}</td>
-                <td>{m.maxPourcent} %</td>
-                <td>{m.saveurs}</td>
-                <td>{m.styles}</td>
+                <td data-label="°L">{plage(m.lovibond)}</td>
+                <td data-label="EBC">{ebc(m.lovibond)}</td>
+                <td data-label="Max">{m.maxPourcent} %</td>
+                <td class="texte" data-label="Saveurs">{m.saveurs}</td>
+                <td class="texte" data-label="Styles">{m.styles}</td>
               </tr>
             ))}
           </tbody>
@@ -106,9 +106,9 @@ const etoiles = (n: number) => "●".repeat(n) + "○".repeat(3 - n);
   <p>
     Les <strong>acides alpha (AA %)</strong> donnent l'amertume : un houblon à 14 % amérit deux fois plus qu'à 7 %.
     Un houblon <em>amérisant</em> va au début de l'ébullition, un <em>aromatique</em> à la fin, au whirlpool ou en
-    dry hop. Voir <a href={url("/notions/houblon")}>Le houblon</a>.
+    dry hop. Voir{" "}<a href={url("/notions/houblon")}>Le houblon</a>.
   </p>
-  <table>
+  <table class="fiches">
     <thead>
       <tr><th>Houblon</th><th>AA %</th><th>Usage</th><th>Arômes</th><th>Styles</th><th>Remplacer par</th></tr>
     </thead>
@@ -116,16 +116,16 @@ const etoiles = (n: number) => "●".repeat(n) + "○".repeat(3 - n);
       {
         HOUBLONS.map((h) => (
           <tr class="filtrable">
-            <td>
+            <td class="titre">
               <strong>{h.nom}</strong>
               <br />
               <span class="petit">{h.origine}</span>
             </td>
-            <td>{plage(h.alpha, 1)}</td>
+            <td data-label="AA">{plage(h.alpha)} %</td>
             <td><span class={`badge ${h.usage === "aromatique" ? "vert" : ""}`}>{USAGES_HOUBLON[h.usage]}</span></td>
-            <td>{h.aromes}</td>
-            <td>{h.styles}</td>
-            <td>{h.substituts}</td>
+            <td class="texte" data-label="Arômes">{h.aromes}</td>
+            <td class="texte" data-label="Styles">{h.styles}</td>
+            <td class="texte" data-label="Remplacer par">{h.substituts}</td>
           </tr>
         ))
       }
@@ -136,9 +136,9 @@ const etoiles = (n: number) => "●".repeat(n) + "○".repeat(3 - n);
   <p>
     L'<strong>atténuation</strong> dit quelle part du sucre la levure mange : plus elle est haute, plus la bière est
     sèche. La <strong>floculation</strong> dit à quelle vitesse elle tombe au fond (élevée = bière claire plus vite).
-    Voir <a href={url("/notions/levure-et-fermentation")}>La levure et la fermentation</a>.
+    Voir{" "}<a href={url("/notions/levure-et-fermentation")}>La levure et la fermentation</a>.
   </p>
-  <table>
+  <table class="fiches">
     <thead>
       <tr><th>Famille</th><th>Atténuation</th><th>Temp.</th><th>Floculation</th><th>Profil</th><th>Styles</th></tr>
     </thead>
@@ -146,16 +146,16 @@ const etoiles = (n: number) => "●".repeat(n) + "○".repeat(3 - n);
       {
         LEVURES.map((l) => (
           <tr class="filtrable">
-            <td>
+            <td class="titre">
               <strong>{l.nom}</strong>
               <br />
               <span class="petit">{l.exemples}</span>
             </td>
-            <td>{plage(l.attenuation)} %</td>
-            <td>{plage(l.temperature)} °C</td>
-            <td>{l.floculation}</td>
-            <td>{l.profil}</td>
-            <td>{l.styles}</td>
+            <td data-label="Atténuation">{plage(l.attenuation)} %</td>
+            <td data-label="Temp.">{plage(l.temperature)} °C</td>
+            <td data-label="Floculation">{l.floculation}</td>
+            <td class="texte" data-label="Profil">{l.profil}</td>
+            <td class="texte" data-label="Styles">{l.styles}</td>
           </tr>
         ))
       }

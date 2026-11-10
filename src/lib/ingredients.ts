@@ -160,7 +160,7 @@ export function couleurSrm(srm: number): string {
 }
 
 /** Plage de valeurs en notation française. */
-export function plage([min, max]: [number, number], decimales = 0): string {
-  const f = (n: number) => n.toLocaleString("fr-CA", { minimumFractionDigits: decimales, maximumFractionDigits: decimales });
+export function plage([min, max]: [number, number], decimales = 1): string {
+  const f = (n: number) => n.toLocaleString("fr-CA", { maximumFractionDigits: decimales });
   return min === max ? f(min) : `${f(min)}–${f(max)}`;
 }
