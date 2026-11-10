@@ -2,6 +2,11 @@
 import { getCollection } from "astro:content";
 import Base from "../../layouts/Base.astro";
 import { url } from "../../lib/url";
+import { IDEES, MIS_A_JOUR } from "../../lib/idees";
+
+const abv = (n?: number) => (n ? ` · ${n.toLocaleString("fr-CA")} %` : "");
+const coupDeCoeur = IDEES.find((i) => i.coupDeCoeur);
+const autres = IDEES.filter((i) => !i.coupDeCoeur);
 
 const recettes = (await getCollection("recettes")).sort((a, b) => a.data.titre.localeCompare(b.data.titre, "fr"));
 ---
@@ -20,4 +25,88 @@ const recettes = (await getCollection("recettes")).sort((a, b) => a.data.titre.l
       ))
     }
   </div>
+
+  <section class="idees">
+    <h2>Idées pour la prochaine</h2>
+    <p>
+      Pas des recettes : des bières très bien notées, une par style, avec une piste pour en brasser une semblable. Le
+      genre de bière qu'on sert en petit verre au prix d'une pinte, parce qu'elle est trop bonne. Les styles sont
+      détaillés dans{" "}<a href={url("/ingredients#styles")}>Ingrédients</a>.
+    </p>
+
+    {
+      coupDeCoeur && (
+        <article class="carte vedette">
+          <span class="surtitre">Coup de cœur · {coupDeCoeur.style}</span>
+          <h3>
+            {coupDeCoeur.biere} <span class="qui">{coupDeCoeur.brasserie}, {coupDeCoeur.lieu}{abv(coupDeCoeur.abv)}</span>
+          </h3>
+          <p>{coupDeCoeur.pourquoi}</p>
+          <p class="piste"><strong>Piste :</strong> {coupDeCoeur.piste}</p>
+          <a class="source" href={coupDeCoeur.source} target="_blank" rel="noopener">Source</a>
+        </article>
+      )
+    }
+
+    <div class="grille liste-idees">
+      {
+        autres.map((i) => (
+          <article class="carte">
+            <span class="surtitre">{i.style}</span>
+            <h3>
+              {i.biere} <span class="qui">{i.brasserie}, {i.lieu}{abv(i.abv)}</span>
+            </h3>
+            <p>{i.pourquoi}</p>
+            <p class="piste"><strong>Piste :</strong> {i.piste}</p>
+            <a class="source" href={i.source} target="_blank" rel="noopener">Source</a>
+          </article>
+        ))
+      }
+    </div>
+    <p class="maj">Notes et classements vérifiés en {MIS_A_JOUR} ; ils changent avec le temps.</p>
+  </section>
 </Base>
+
+<style>
+  .idees {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--ambre-clair);
+  }
+  .idees h2 {
+    margin-top: 0.5rem;
+  }
+  .idees .carte p {
+    margin-top: 0.4rem;
+    font-size: 0.92rem;
+  }
+  .idees h3 {
+    margin: 0.2rem 0 0;
+  }
+  .qui {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--doux);
+  }
+  .piste {
+    color: var(--texte) !important;
+  }
+  .source {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+  }
+  .vedette {
+    border: 2px solid var(--ambre);
+    background: var(--mousse);
+    margin: 1rem 0;
+  }
+  .liste-idees {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+  .maj {
+    font-size: 0.85rem;
+    color: var(--doux);
+  }
+</style>

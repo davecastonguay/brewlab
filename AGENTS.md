@@ -8,6 +8,7 @@ Carnet de brassage personnel, en français (Québec). Site statique Astro, publi
 - **Nouvelle recette** : `src/content/recettes/nom-court.md`. Le schéma est dans `src/content.config.ts`. Les étapes du jour de brassage sont générées automatiquement à partir des malts, paliers et houblons (`src/lib/etapes.ts`).
 - **Nouvelle notion** : `src/content/notions/NN-sujet.md`. Structure : `## L'essentiel` puis `## Pour aller plus loin`.
 - **Ingrédients** (malts, houblons, levures, styles) : `src/lib/ingredients.ts`, affichés sur la page `/ingredients`.
+- **Idées de recettes** (bières très bien notées par style, en bas de `/recettes`) : `src/lib/idees.ts`. Mettre à jour `MIS_A_JOUR` avec la liste.
 - Une valeur incertaine ou à vérifier : `aConfirmer: true` (affiche un badge « à confirmer »).
 
 ## Vérifier
